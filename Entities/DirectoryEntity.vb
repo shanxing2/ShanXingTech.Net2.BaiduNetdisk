@@ -24,7 +24,7 @@ Namespace ShanXingTech.Net2
 				''' </summary>
 				Public Property isdir() As Integer
 				''' <summary>
-				''' 
+				''' 文件夹里面没有文件夹 = 1
 				''' </summary>
 				Public Property dir_empty() As Integer
 				''' <summary>
@@ -60,7 +60,7 @@ Namespace ShanXingTech.Net2
 				''' </summary>
 				Public Property local_ctime() As Integer
 				''' <summary>
-				''' 
+				''' 此属性有误，请勿使用
 				''' </summary>
 				Public Property empty() As Integer
 				''' <summary>

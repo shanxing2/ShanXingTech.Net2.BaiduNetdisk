@@ -841,54 +841,11 @@ Namespace ShanXingTech.Net2
         ''' 生成操作百度网盘需要的参数LogID
         ''' </summary>
         ''' <returns></returns>
-        Private Function GetBase64LogId() As String
+        Public Shared Function GetBase64LogId() As String
             Dim funcRst As String = $"{Date.Now.ToTimeStampString(TimePrecision.Millisecond)}0.{CStr(Now.ToFileTime)}"
             funcRst = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(funcRst))
 
             Return funcRst
-        End Function
-
-        ''' <summary>
-        ''' 检验分享文件的有效性最多花费多长时间，单位：秒
-        ''' </summary>
-        ''' <returns></returns>
-        Public Property MaxVerifyShareFileTime As Integer = 15
-
-        ''' <summary>
-        ''' 检验分享文件的有效性。
-        ''' </summary>
-        ''' <param name="url"></param>
-        ''' <returns>文件合法返回True,文件（包含）违规返回False</returns>
-        Public Overloads Async Function VerifyShareFileAsync(ByVal url As String) As Task(Of Boolean)
-            Dim cts As New CancellationTokenSource
-            Dim ct = cts.Token
-            ' 每个分享最多花 MaxVerifyShareFileTime 秒去检测而且不一定能检测出来是否违规，如果有更好的方法能检测到分享是否违规，可以代替
-            cts.CancelAfter(TimeSpan.FromSeconds(MaxVerifyShareFileTime))
-            Dim containLegalChars As Boolean
-
-            Try
-                While True
-                    If cts.IsCancellationRequested Then Exit While
-
-                    Dim rst = Await TryDoGetAsync(url)
-
-                    If Not rst.Success Then Return False
-
-                    Dim notFound = rst.Message.Contains("share_nofound")
-                    If notFound Then Return False
-
-                    ' 登录和未登录时页面能看到的特征字符
-                    ' 部分违规文件不是分享之后，马上就能检测出是否违规，所以需要多尝试几次
-                    containLegalChars = rst.Message.Contains("请输入提取码") OrElse rst.Message.Contains("失效时间")
-                    If Not containLegalChars Then Return False
-
-                    Await Task.Delay(TimeSpan.FromSeconds(3), ct)
-                End While
-            Catch ex As TaskCanceledException
-                ' do nothing
-            End Try
-
-            Return containLegalChars
         End Function
 
         ''' <summary>
@@ -929,7 +886,7 @@ Namespace ShanXingTech.Net2
 
         ''' <summary>
         ''' 获取分享操作返回状态码对应的描述
-        ''' <para>错误信息可以参考： https://pan.baidu.com/sns/box-static/disk-share/pkg/system_e1e7e07.js?t=1609136433030</para>
+        ''' <para>错误信息可以参考： https://pan.baidu.com/sns/box-static/disk-share/pkg/system_e1e7e07.js?t=1609136433030 </para>
         ''' </summary>
         ''' <param name="errorNo"></param>
         ''' <returns></returns>
@@ -988,7 +945,7 @@ Namespace ShanXingTech.Net2
         ''' <returns></returns>
         Private Function MakePrivatePassword() As String
             ' 只要生成随机四位密码就行，不需要用官网的Js提取码生成算法
-            Dim e = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "m", "n", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
+            Dim e = "123456789abcdefghijkmnpqrstuvwxyz".ToCharArray
             Dim sb = StringBuilderCache.Acquire(360)
             For i = 1 To 4
                 sb.Append(e(m_Random.Next(0, e.Length)))

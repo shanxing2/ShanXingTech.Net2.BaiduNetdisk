@@ -47,7 +47,9 @@ Namespace ShanXingTech.Net2
                 If file.Id <> CLng(contain.Fs_Id) Then Continue For
 
                 Dim pathArr = contain.Path.Split({"/"c}, StringSplitOptions.RemoveEmptyEntries)
-                If pathArr.Length > 1 Then
+                If pathArr.Length = 1 Then
+                    sb.Append(contain.Path)
+                ElseIf pathArr.Length > 1 Then
                     sb.Append("/").Append(file.FullPath)
                     For i = 1 To pathArr.Length - 1
                         sb.Append("/"c).Append(pathArr(i))
@@ -130,10 +132,10 @@ Namespace ShanXingTech.Net2
                 End If
 
                 ' 获取目录
-                Dim shareData = rst.Message.GetFirstMatchValue("yunData.setData\((.*?)\)")
+                Dim shareData = rst.Message.GetFirstMatchValue("locals.mset\((.*?)\)")
 
                 Dim root = MSJsSerializer.Deserialize(Of ShareFileEntity.Root)(shareData)
-                For Each f In root.file_list.list
+                For Each f In root.file_list
                     Try
                         ' 文件在进入文件夹的已经浏览了，不需要再浏览一次
                         If 1 <> f.isdir Then Continue For

@@ -1,7 +1,7 @@
 ﻿Namespace ShanXingTech.Net2
 	Partial Class BdVerifier
 		Public Class ShareFileEntity
-			Public Class List
+			Public Class File_list
 				''' <summary>
 				''' 
 				''' </summary>
@@ -76,38 +76,12 @@
 				Private m_fs_id As String
 			End Class
 
-			Public Class File_list
-				''' <summary>
-				''' 
-				''' </summary>
-				Public Property errno() As Integer
-					Get
-						Return m_errno
-					End Get
-					Set
-						m_errno = Value
-					End Set
-				End Property
-				Private m_errno As Integer
-				''' <summary>
-				''' 
-				''' </summary>
-				Public Property list() As List(Of List)
-					Get
-						Return m_list
-					End Get
-					Set
-						m_list = Value
-					End Set
-				End Property
-				Private m_list As List(Of List)
-			End Class
 
 			Public Class Root
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property file_list() As File_list
+				Public Property file_list() As List(Of File_list)
 					Get
 						Return m_file_list
 					End Get
@@ -115,7 +89,7 @@
 						m_file_list = Value
 					End Set
 				End Property
-				Private m_file_list As File_list
+				Private m_file_list As List(Of File_list)
 				''' <summary>
 				''' 
 				''' </summary>

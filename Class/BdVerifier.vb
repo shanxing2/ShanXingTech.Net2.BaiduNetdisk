@@ -42,6 +42,11 @@ Namespace ShanXingTech.Net2
                 Return
             End If
 
+            If contain.Fs_Id.IsNullOrEmpty Then
+                RaiseEvent CheckReport(Nothing, New CheckReportEventArgs(LegalOptions.No, $"‘{contain.Path}’   包含违规文件"))
+                Return
+            End If
+
             Dim sb As New StringBuilder
             For Each file In path
                 If file.Id <> CLng(contain.Fs_Id) Then Continue For
@@ -147,7 +152,7 @@ Namespace ShanXingTech.Net2
                             If match.Success Then
                                 Return (LegalOptions.No, match.Groups(2).Value, match.Groups(1).Value)
                             Else
-                                Return (LegalOptions.No, "获取失败", String.Empty)
+                                Return (LegalOptions.No, path, String.Empty)
                             End If
                         End If
                     Catch ex As Exception

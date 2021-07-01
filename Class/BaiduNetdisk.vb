@@ -159,7 +159,7 @@ Namespace ShanXingTech.Net2
 
             ' 处理请求参数
             'Dim keyValueParams As New Dictionary(Of String, String)
-            'Dim kvsQueryString = Web.HttpUtility.ParseQueryString(postData)
+            'Dim kvsQueryString = Net.WebUtility.ParseQueryString(postData)
             'For Each key In kvsQueryString.AllKeys
             '    keyValueParams.Add(key, kvsQueryString(key))
             'Next

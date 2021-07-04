@@ -6,7 +6,7 @@ Namespace ShanXingTech.Net2
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property server_mtime() As Integer
+				Public Property server_mtime() As Long
 				''' <summary>
 				''' 
 				''' </summary>
@@ -30,15 +30,15 @@ Namespace ShanXingTech.Net2
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property oper_id() As Integer
+				Public Property oper_id() As Long
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property server_ctime() As Integer
+				Public Property server_ctime() As Long
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property local_mtime() As Integer
+				Public Property local_mtime() As Long
 				''' <summary>
 				''' 
 				''' </summary>
@@ -58,7 +58,7 @@ Namespace ShanXingTech.Net2
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property local_ctime() As Integer
+				Public Property local_ctime() As Long
 				''' <summary>
 				''' 此属性有误，请勿使用
 				''' </summary>

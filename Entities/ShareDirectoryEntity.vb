@@ -21,6 +21,7 @@
 				''' 
 				''' </summary>
 				Public Property errno() As Integer
+				Public Property show_msg() As String
 				''' <summary>
 				''' 
 				''' </summary>

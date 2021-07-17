@@ -5,6 +5,7 @@ Imports System.Text
 Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports System.Threading.Tasks
+
 Imports ShanXingTech
 Imports ShanXingTech.Text2
 
@@ -15,23 +16,7 @@ Namespace ShanXingTech.Net2
     Public Class BaiduNetdisk
 
 #Region "枚举区"
-        Public Enum ShareExpirationDate
-            ''' <summary>
-            ''' 永久有效
-            ''' </summary>
-            <Description("永久有效")>
-            Forever = 0
-            ''' <summary>
-            ''' 一天有效
-            ''' </summary>
-            <Description("一天有效")>
-            OneDay = 1
-            ''' <summary>
-            ''' 七天有效
-            ''' </summary>
-            <Description("七天有效")>
-            SevenDay = 7
-        End Enum
+
 #End Region
 
 #Region "字段区"
@@ -697,7 +682,7 @@ Namespace ShanXingTech.Net2
         ''' <param name="postData"></param>
         ''' <param name="targetsSerial">可以是单一目标的序列化字符串形式，也可以是多个目标的序列化字符串形式</param>
         ''' <returns></returns>
-        Private Async Function DoDelteAsync(ByVal postData As String, ByVal targetsSerial As String) As Task(Of HttpResponse)
+        Private Async Function DoDeleteAsync(ByVal postData As String, ByVal targetsSerial As String) As Task(Of HttpResponse)
             ' logid 可有可无
             Dim url = $"https://pan.baidu.com/api/filemanager?opera=delete&async=2&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
@@ -781,7 +766,7 @@ Namespace ShanXingTech.Net2
         ''' <param name="targetsSerial">需操作的对象</param>
         ''' <returns>如果成功，Message 不返回任何信息，并且Success置为True;如果失败，则 Message 返回具体错误信息</returns>
         Private Async Function DoOperateAndReturnResult(ByVal postData As String, ByVal targetsSerial As String) As Task(Of HttpResponse)
-            Dim optRst = Await DoDelteAsync(postData, targetsSerial)
+            Dim optRst = Await DoDeleteAsync(postData, targetsSerial)
             ' 如果成功，不需要返回任何信息，并且Success置为True;如果失败，则返回具体错误信息
             Return If(optRst.Success AndAlso optRst.Message.IndexOf("""status"":""success""") > -1,
                  New HttpResponse(True, HttpStatusCode.OK, String.Empty),
@@ -886,7 +871,7 @@ Namespace ShanXingTech.Net2
 
         ''' <summary>
         ''' 获取分享操作返回状态码对应的描述
-        ''' <para>错误信息可以参考： https://pan.baidu.com/sns/box-static/disk-share/pkg/system_e1e7e07.js?t=1609136433030 </para>
+        ''' <para>错误信息可以参考： https://nd-static.bdstatic.com/v20-static/static/home/js/home.862649c2.js </para>
         ''' </summary>
         ''' <param name="errorNo"></param>
         ''' <returns></returns>
@@ -921,14 +906,32 @@ Namespace ShanXingTech.Net2
                 {-62, "密码输入次数达到上限"},
                 {-64, "描述包含敏感词"},
                 {-70, "你分享的文件中包含病毒或疑似病毒，为了你和他人的数据安全，换个文件分享吧"},
+                {1, "服务器错误"},
                 {2, "参数错误"},
                 {3, "未登录或帐号无效"},
                 {4, "存储好像出问题了，请稍候再试"},
+                {12, "批量处理错误"},
+                {14, "网络错误，请稍候重试"},
+                {15, "操作失败，请稍候重试"},
+                {16, "网络错误，请稍候重试"},
+                {105, "创建链接失败，请重试"},
+                {106, "文件读取失败，请<a href=""javascript:window.location.reload();"">刷新</a>页面后重试'"},
                 {108, "文件名有敏感词，优化一下吧"},
-                {110, "分享次数超出限制，可以到"“我的分享”"中查看已分享的文件链接"},
+                {110, "分享次数超出限制，可以到“"我的分享"”中查看已分享的文件链接"},
+                {112, "页面已过期，请<a style=""color: #06A7FF;"" href=""javascript:window.location.reload();"">刷新</a>后重试"},
+                {113, "外链签名有误"},
                 {114, "当前任务不存在，保存失败"},
                 {115, "该文件禁止分享"},
-                {112, "页面已过期，请<a href=""javascript,window.location.reload();"">刷新</a>后重试"},
+                {2126, "文件名中含有敏感词"},
+                {2161, "文件中含有违规内容"},
+                {2162, "对方加你为好友之后才能发送"},
+                {2135, "对方拒绝接收消息"},
+                {2136, "对方拒接非好友消息"},
+                {2102, "群组不存在"},
+                {2103, "你已退出该群"},
+                {2101, "你已达到创建2000群上限"},
+                {2100, "用户都已经被添加过"},
+                {2119, "群成员已满"},
                 {9100, "你的帐号存在违规行为，已被冻结，<a href=""/disk/appeal"" target=""_blank"">查看详情</a>"},
                 {9200, "你的帐号存在违规行为，已被冻结，<a href=""/disk/appeal"" target=""_blank"">查看详情</a>"},
                 {9300, "你的帐号存在违规行为，该功能暂被冻结，<a href=""/disk/appeal"" target=""_blank"">查看详情</a>"},

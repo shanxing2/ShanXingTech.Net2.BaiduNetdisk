@@ -127,6 +127,19 @@
 					End Set
 				End Property
 				Private m_shareid As Long
+
+				''' <summary>
+				''' 
+				''' </summary>
+				Public Property errno() As Integer
+					Get
+						Return m_errno
+					End Get
+					Set
+						m_errno = Value
+					End Set
+				End Property
+				Private m_errno As Integer
 			End Class
 		End Class
 

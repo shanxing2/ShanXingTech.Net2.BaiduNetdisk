@@ -38,6 +38,7 @@
 				''' 
 				''' </summary>
 				Public Property premis() As Boolean
+				Public Property show_msg() As String
 			End Class
 		End Class
 

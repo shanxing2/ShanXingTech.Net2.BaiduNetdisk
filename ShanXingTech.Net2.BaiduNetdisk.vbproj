@@ -86,12 +86,15 @@
   <ItemGroup>
     <Compile Include="Class\BaiduNetdisk.vb" />
     <Compile Include="Class\BdVerifier.vb" />
+    <Compile Include="Class\BdVerifierConf.vb" />
+    <Compile Include="Class\ShareResultCacheInfo.vb" />
     <Compile Include="Entities\DirectoryEntity.vb" />
     <Compile Include="Entities\PathInfo.vb" />
     <Compile Include="Entities\ShareDirectoryEntity.vb" />
     <Compile Include="Entities\ShareFileEntity.vb" />
     <Compile Include="Entities\ShareResultEntity.vb" />
-    <Compile Include="Enum\Enums.vb" />
+    <Compile Include="Enum\LegalOptions.vb" />
+    <Compile Include="Enum\ShareExpirationDate.vb" />
     <Compile Include="EventArgs\BrowsingEventArgs.vb" />
     <Compile Include="EventArgs\CheckBaseEventArgs.vb" />
     <Compile Include="EventArgs\CheckReportEventArgs.vb" />

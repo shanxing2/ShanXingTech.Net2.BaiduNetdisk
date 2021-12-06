@@ -1,21 +1,21 @@
 ﻿Namespace ShanXingTech.Net2
-    Partial Class BdVerifier
+    Partial Class BaiduNetdisk
         ''' <summary>
-        ''' 文件合法枚举
+        ''' 文件目录以...排序
         ''' </summary>
-        Public Enum LegalOptions
+        Public Enum OrderMode
             ''' <summary>
-            ''' 合法
+            ''' 文件名 (默认)
             ''' </summary>
-            Yes
+            name
             ''' <summary>
-            ''' 非法
+            ''' 大小
             ''' </summary>
-            No
+            size
             ''' <summary>
-            ''' 未知结果
+            ''' 修改日期
             ''' </summary>
-            Unknow
+            time
         End Enum
     End Class
 End Namespace

@@ -40,4 +40,14 @@ Public Class BdVerifierConf
     ''' </summary>
     ''' <returns></returns>
     Public Property Fs_Ids_Md5_ShareLinkDic As Dictionary(Of String, ShareResultCacheInfo)
+    ''' <summary>
+    ''' 以什么排序
+    ''' </summary>
+    ''' <returns></returns>
+    Public Property Order As ShanXingTech.Net2.BaiduNetdisk.OrderMode
+    ''' <summary>
+    ''' 是否降序
+    ''' </summary>
+    ''' <returns></returns>
+    Public Property Desc As Boolean
 End Class

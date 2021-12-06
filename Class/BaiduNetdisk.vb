@@ -21,14 +21,10 @@ Namespace ShanXingTech.Net2
 
 #Region "字段区"
         Private ReadOnly m_Random As Random
+        Private ReadOnly m_BdVerifierConf As BdVerifierConf
 #End Region
 
 #Region "属性区"
-        ' http请求需要的cookies，只要在第一次使用的时候设置就可以了，类内部会自动管理cookies
-        Private ReadOnly m_Cookies As CookieContainer
-        Private ReadOnly m_BdsToken As String
-        Private ReadOnly m_BdUSS As String
-
         ''' <summary>
         ''' 整个上传操作完成标记
         ''' </summary>
@@ -86,7 +82,6 @@ Namespace ShanXingTech.Net2
             End Get
         End Property
 
-
 #End Region
 
 #Region "事件区"
@@ -101,22 +96,17 @@ Namespace ShanXingTech.Net2
         ''' <summary>
         ''' 
         ''' </summary>
-        ''' <param name="cookies">登录网盘之后的cookies</param>
-        ''' <param name="bdsToken"></param>
-        ''' <param name="bdUSS"></param>
-        Sub New(ByRef cookies As CookieContainer, ByVal bdsToken As String, ByVal bdUSS As String)
+        Sub New(ByRef bdVerifierConf As BdVerifierConf)
             m_Random = New Random
 
-            Me.m_Cookies = cookies
+            m_BdVerifierConf = bdVerifierConf
+
             ' 把传入的cookie装盒并且设置到请求头
             ' cookie只能是这样设置.而且s_HttpClientHandler会内部会自动管理cookies
             ' 不需要多次设置
-            Net2.HttpAsync.Instance.ReInit(cookies)
+            Net2.HttpAsync.Instance.ReInit(bdVerifierConf.BdCookies)
 
             ' 只有在构造函数内能修改 ReadOnly 字段
-            Me.m_BdsToken = bdsToken
-            Me.m_BdUSS = bdUSS
-
             isUploadFileCompleted = False
             m_UploadFileResult = New HttpResponse(False, 0, "Waiting for upload")
 
@@ -162,10 +152,10 @@ Namespace ShanXingTech.Net2
         ''' <param name="loginedHtml"></param>
         ''' <returns></returns>
         Public Shared Function GetLoginInfo(ByVal loginedHtml As String) As (BdsToken As String, BdUSS As String)
-            'm_BdsToken = "885bc0c371ec21241da3a5f63248724b"
-            'm_BdUSS = "pansec_DCb740ccc5511e5e8fedcff06b081203-1BXEtz42RhOdPXw8thmfUr%2BEJBfcDkLhb3RioiBJqY6OgmLJTpbglX5A9Tm%2BiE45vqGoUucEwmXcM%2FUs%2FP1Us8p2eRJLx70Sw7S3eUdDG3ueCrERKsjiDGucUnarSUeEXpuUm29hTMjSkvEn9lSSrv9heoyH0zdxtY%2BYM6Dqm8qjFiBDEfjCVOiy8YN5uv6RfoE9VfhbDL98pCYx%2BJ5%2FQNPXTD2i7GqVsoTFVhKXBI8S%2B9%2F3phuA%2BCbWaZo%2Bcj2E1BpyPDKQN29i%2B3exBXLwzQ%3D%3D"
+            'm_BdVerifierConf.BdsToken = "885bc0c371ec21241da3a5f63248724b"
+            'm_BdVerifierConf.BdUSS = "pansec_DCb740ccc5511e5e8fedcff06b081203-1BXEtz42RhOdPXw8thmfUr%2BEJBfcDkLhb3RioiBJqY6OgmLJTpbglX5A9Tm%2BiE45vqGoUucEwmXcM%2FUs%2FP1Us8p2eRJLx70Sw7S3eUdDG3ueCrERKsjiDGucUnarSUeEXpuUm29hTMjSkvEn9lSSrv9heoyH0zdxtY%2BYM6Dqm8qjFiBDEfjCVOiy8YN5uv6RfoE9VfhbDL98pCYx%2BJ5%2FQNPXTD2i7GqVsoTFVhKXBI8S%2B9%2F3phuA%2BCbWaZo%2Bcj2E1BpyPDKQN29i%2B3exBXLwzQ%3D%3D"
 
-            ' 访问网盘首页 以获取bdsToken 和 m_BdUSS
+            ' 访问网盘首页 以获取bdsToken 和 m_BdVerifierConf.BdUSS
             'Dim getHomeRst = Await Net2.GetAsync("https://pan.baidu.com/disk/home", defaultHttpGetRequestHeaders)
             Dim pattern = """bdstoken"":""(\w+)"".*?""XDUSS"":""(.*?)"""
             Dim match = Regex.Match(loginedHtml, pattern, RegexOptions.IgnoreCase Or RegexOptions.Compiled)
@@ -203,13 +193,13 @@ Namespace ShanXingTech.Net2
         ''' <param name="uploadInfo"></param>
         Private Async Function UploadFileAsync(ByVal uploadInfo As UploadInfo) As Task
             ' uploadID BDUSS 都不能为空或者有误
-            Dim url = $"https://c3.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&app_id=250528&channel=chunlei&clienttype=0&uploadClient=1&BDUSS={m_BdUSS}&logid={GetBase64LogId()}&path={uploadInfo.UploadPath}{uploadInfo.FileName}&uploadid={uploadInfo.UploadID}&partseq=0"
+            Dim url = $"https://c3.pcs.baidu.com/rest/2.0/pcs/superfile2?method=upload&app_id=250528&channel=chunlei&clienttype=0&uploadClient=1&BDUSS={m_BdVerifierConf.BdUSS}&logid={GetBase64LogId()}&path={uploadInfo.UploadPath}{uploadInfo.FileName}&uploadid={uploadInfo.UploadID}&partseq=0"
 
             Using uploadClient As New WebClient
                 ' 设置请求头
                 uploadClient.Headers.Set(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0")
                 ' 如果cookie跟bdstoken对不上，可能会导致传输到 50%的时候发生 您的主机中的软件中止了一个已建立的连接 异常
-                uploadClient.Headers.Set(HttpRequestHeader.Cookie, m_Cookies.ToKeyValuePairs)
+                uploadClient.Headers.Set(HttpRequestHeader.Cookie, m_BdVerifierConf.BdCookies.ToKeyValuePairs)
 
                 ' 注册相关事件，以向外部报告上传状态
                 AddHandler uploadClient.UploadProgressChanged, AddressOf UploadProgressChangedEventHandle
@@ -276,7 +266,7 @@ Namespace ShanXingTech.Net2
             'Debug.Print(Logger.MakeDebugString( $"上传完毕,等待创建 {uploadRst}"))
 
             ' 上传文件第三步
-            Dim url = $"https://pan.baidu.com/api/create?isdir=0&rtype=1&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/create?isdir=0&rtype=1&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&clienttype=0"
             'path =/ 我的资源 / 1.png
             'Size = 31412
             'uploadid = N1-MTE2LjcuMjEuNTM6MTUwMzY1OTkzODo1NDkyMTcyODExNDg2NzU4Nzgy  可以为空啥
@@ -376,10 +366,10 @@ Namespace ShanXingTech.Net2
 
 #Region "文件重复性检查01"
             Dim md5sList As New List(Of String)
-            ' 如果之前没有获取过这个上传目录的信息，那就需要先获取一遍以得到改目录根目录下所有文件的md5
+            ' 如果之前没有获取过这个上传目录的信息，那就需要先获取一遍以得到该目录根目录下所有文件的md5
             Dim containKey = md5sOfExistFileInUploadPath.ContainsKey(uploadPath)
             If Not containKey Then
-                Dim getDirInfoRst = Await GetDirInfoAsync(uploadPath)
+                Dim getDirInfoRst = Await GetDirInfoAsync(uploadPath, 1)
                 If getDirInfoRst.Success Then
                     md5sList = GetMD5s(getDirInfoRst.Message)
                     md5sOfExistFileInUploadPath.TryAdd(uploadPath, md5sList)
@@ -417,7 +407,7 @@ Namespace ShanXingTech.Net2
             m_UploadFileResult = New HttpResponse(False, 0, "Waiting for upload")
 
 #Region "上传文件第一步"
-            Dim url = $"https://pan.baidu.com/api/precreate?channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/precreate?channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&clienttype=0"
 
             Dim postData = $"path={uploadPath}{fileName}&autoinit=1&block_list=%5B%22{fileMd5}%22%5D"
 
@@ -551,7 +541,7 @@ Namespace ShanXingTech.Net2
         ''' <returns>返回第一页，前100个结果。在 Message 里面可以找到 has_more 标记，值为 1 时表示还有更多结果</returns>
         Public Async Function SearchAsync(ByVal keyword As String) As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/search?recursion=1&order=time&desc=1&showempty=0&uploadClient=1&page=1&num=100&key={keyword}&t=0.{CStr(Now.ToFileTime)}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/search?recursion=1&order=time&desc=1&showempty=0&uploadClient=1&page=1&num=100&key={keyword}&t=0.{CStr(Now.ToFileTime)}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             Return Await Net2.HttpAsync.Instance.GetAsync(url, DefaultHttpGetRequestHeader)
         End Function
@@ -565,7 +555,7 @@ Namespace ShanXingTech.Net2
         ''' <returns></returns>
         Public Async Function SearchAsync(ByVal keyword As String， ByVal page As Integer, ByVal pageSize As Integer) As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/search?recursion=1&order=time&desc=1&showempty=0&uploadClient=1&page={CStr(page)}&num={CStr(pageSize)}&key={keyword}&t=0.{CStr(Now.ToFileTime)}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/search?recursion=1&order=time&desc=1&showempty=0&uploadClient=1&page={CStr(page)}&num={CStr(pageSize)}&key={keyword}&t=0.{CStr(Now.ToFileTime)}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             Return Await Net2.HttpAsync.Instance.GetAsync(url, DefaultHttpGetRequestHeader)
         End Function
@@ -576,7 +566,7 @@ Namespace ShanXingTech.Net2
         ''' <returns>返回 总容量(单位：B 下同)、可用容量、已用容量、是否到期等信息</returns>
         Public Async Function GetNetDiskInfoAsync() As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/quota?checkexpire=1&checkfree=1&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/quota?checkexpire=1&checkfree=1&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             Return Await TryDoGetAsync(url)
         End Function
@@ -585,7 +575,7 @@ Namespace ShanXingTech.Net2
         ''' 获取网盘首页目录信息
         ''' </summary>
         ''' <returns>操作执行完成 Success 返回 True ,否则返回 False ;Message 返回操作结果</returns>
-        Public Async Function GetHomeDirInfoAsync() As Task(Of HttpResponse)
+        Public Async Function GetHomeDirInfoAsync() As Task(Of DirectoryEntity.Root)
             Return Await GetDirInfoAsync("/")
         End Function
 
@@ -593,12 +583,56 @@ Namespace ShanXingTech.Net2
         ''' 获取网盘某个目录信息
         ''' </summary>
         ''' <param name="dir">目录路径。不需要编码,如 '/软件包' </param>
+        ''' <param name="page">定位到某页 </param>
         ''' <returns></returns>
-        Public Async Function GetDirInfoAsync(ByVal dir As String) As Task(Of HttpResponse)
+        Public Async Function GetDirInfoAsync(ByVal dir As String, ByVal page As Integer) As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/list?dir={dir}&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&num=100&order=time&desc=1&clienttype=0&showempty=0&uploadClient=1&page=1&channel=chunlei&app_id=250528"
+            Dim url = $"https://pan.baidu.com/api/list?dir={dir}&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&num=100&order={m_BdVerifierConf.Order.ToString}&desc={If(m_BdVerifierConf.Desc, 0, 1)}&clienttype=0&showempty=0&uploadClient=1&page={page}&channel=chunlei&app_id=250528"
 
             Return Await TryDoGetAsync(url)
+        End Function
+
+        ''' <summary>
+        ''' 获取网盘某个目录信息(当前目录全部文件)
+        ''' </summary>
+        ''' <param name="dir">目录路径。不需要编码,如 '/软件包' </param>
+        ''' <returns></returns>
+        Public Async Function GetDirInfoAsync(ByVal dir As String) As Task(Of DirectoryEntity.Root)
+            Dim page = 1
+            Dim root As DirectoryEntity.Root
+
+            Dim getRst = Await GetDirInfoAsync(dir, page)
+
+            Try
+                root = MSJsSerializer.Deserialize(Of DirectoryEntity.Root)(getRst.Message)
+
+                If root.errno = 0 AndAlso root.list.Count < 100 Then
+                    Exit Try
+                End If
+
+                ' 获取当前目录所有文件
+DirLoop:
+                page += 1
+                getRst = Await GetDirInfoAsync(dir, page)
+                Dim tempRoot = MSJsSerializer.Deserialize(Of DirectoryEntity.Root)(getRst.Message)
+                If tempRoot.errno = 0 Then
+                    root.list.AddRange(tempRoot.list)
+                Else
+                    root.errno = tempRoot.errno
+                    Exit Try
+                End If
+                If tempRoot.list.Count < 100 Then
+                    Exit Try
+                Else
+                    GoTo DirLoop
+                End If
+            Catch ex As Exception
+                Logger.WriteLine(ex, getRst.Message,,,)
+            End Try
+
+#Disable Warning BC42104 ' 在为变量赋值之前，变量已被使用
+            Return If(root, New DirectoryEntity.Root)
+#Enable Warning BC42104 ' 在为变量赋值之前，变量已被使用
         End Function
 
         ''' <summary>
@@ -607,7 +641,7 @@ Namespace ShanXingTech.Net2
         ''' <param name="dir">目录路径。不需要编码</param>
         ''' <returns></returns>
         Public Async Function ExistsDir(ByVal dir As String) As Task(Of Boolean)
-            Dim getRst = Await GetDirInfoAsync(dir)
+            Dim getRst = Await GetDirInfoAsync(dir, 1)
             Dim funcRst = getRst.Success AndAlso getRst.Message.IndexOf("""errno"":0") > -1
 
             Return funcRst
@@ -622,7 +656,7 @@ Namespace ShanXingTech.Net2
             ' 先获取到文件的目录信息，然后再从目录中查找是否存在文件
             Dim filePath = IO.Path.GetDirectoryName(fileFullPath)
             filePath = filePath.Replace("\", "/")
-            Dim getRst = Await GetDirInfoAsync(filePath)
+            Dim getRst = Await GetDirInfoAsync(filePath, 1)
             If getRst.Success AndAlso getRst.Message.IndexOf("""errno"":0") > -1 Then
                 ' 只要返回的信息中含有 file 的文件名，就说明此目录包含 file 文件
                 Dim fileName = IO.Path.GetFileName(fileFullPath)
@@ -643,7 +677,7 @@ Namespace ShanXingTech.Net2
         ''' <returns>创建成功返回新创建文件夹的信息；如果文件夹已经存在，则自动在 <paramref name="dir"/>的基础上加上 “(递增数字)” 格式后缀作为新的文件夹名</returns>
         Public Async Function CreateDirAsync(ByVal dir As String) As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/create?a=commit&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/create?a=commit&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             Dim postData = $"path={dir}&isdir=1&block_list=%5B%5D"
 
@@ -684,7 +718,7 @@ Namespace ShanXingTech.Net2
         ''' <returns></returns>
         Private Async Function DoDeleteAsync(ByVal postData As String, ByVal targetsSerial As String) As Task(Of HttpResponse)
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/api/filemanager?opera=delete&async=2&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/api/filemanager?opera=delete&async=2&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             ' 提交删除任务
             Dim json = Await TryDoPostAsync(url, postData)
@@ -794,7 +828,7 @@ Namespace ShanXingTech.Net2
             Dim postData = $"filelist=[{targetsSerial}]"
 
             ' logid 可有可无
-            Dim url = $"https://pan.baidu.com/share/taskquery?taskid={taskID}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}&clienttype=0"
+            Dim url = $"https://pan.baidu.com/share/taskquery?taskid={taskID}&channel=chunlei&uploadClient=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}&clienttype=0"
 
             ' 延时1.5秒再查下任务执行结果
             Await Task.Delay(1500)
@@ -864,7 +898,7 @@ Namespace ShanXingTech.Net2
         ''' <param name="privatePassword">4个字符长度提取码,默认随机创建</param>
         ''' <returns></returns>
         Private Async Function InternalShareAsync(ByVal fileIdList As String, ByVal expirationDate As ShareExpirationDate, Optional ByVal privatePassword As String = Nothing) As Task(Of HttpResponse)
-            Dim url = $"https://pan.baidu.com/share/set?channel=chunlei&clienttype=0&web=1&channel=chunlei&web=1&app_id=250528&bdstoken={m_BdsToken}&logid={GetBase64LogId()}=&clienttype=0"
+            Dim url = $"https://pan.baidu.com/share/set?channel=chunlei&clienttype=0&web=1&channel=chunlei&web=1&app_id=250528&bdstoken={m_BdVerifierConf.BdsToken}&logid={GetBase64LogId()}=&clienttype=0"
             Dim postData = $"schannel=4&channel_list=[]&period={expirationDate.ToStringOfCulture}&pwd={If(privatePassword, MakePrivatePassword())}&fid_list=[{fileIdList}]"
             Return Await TryDoPostAsync(url, postData)
         End Function

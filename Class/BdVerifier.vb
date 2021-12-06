@@ -25,6 +25,26 @@ Namespace ShanXingTech.Net2
 
 #Region "属性区"
 
+        ''' <summary>
+        ''' 文件目录以...排序
+        ''' </summary>
+        ''' <returns></returns>
+        Public ReadOnly Property Order() As OrderMode
+            Get
+                Return m_BdVerifierConf.Order
+            End Get
+        End Property
+
+
+        ''' <summary>
+        ''' 降序否
+        ''' </summary>
+        ''' <returns></returns>
+        Public ReadOnly Property Desc() As Boolean
+            Get
+                Return m_BdVerifierConf.Desc
+            End Get
+        End Property
 #End Region
 
 #Region "构造函数区"
@@ -33,7 +53,7 @@ Namespace ShanXingTech.Net2
         ''' </summary>
         ''' <param name="bdVerifierConf">用于实例化类<see cref="BdVerifier"/>的配置类</param>
         Public Sub New(ByRef bdVerifierConf As BdVerifierConf)
-            MyBase.New(bdVerifierConf.BdCookies, bdVerifierConf.BdsToken, bdVerifierConf.BdUSS)
+            MyBase.New(bdVerifierConf)
             m_BdVerifierConf = bdVerifierConf
             m_Cts = New Threading.CancellationTokenSource
 
@@ -42,6 +62,23 @@ Namespace ShanXingTech.Net2
             End If
         End Sub
 #End Region
+
+#Region "函数区"
+        ''' <summary>
+        ''' 更改文件展示的顺序（以什么排序）
+        ''' </summary>
+        ''' <param name="order"></param>
+        Public Sub ChangeOrder(ByVal order As OrderMode)
+            m_BdVerifierConf.Order = order
+        End Sub
+
+        ''' <summary>
+        ''' 更改文件展示的顺序（升序或降序）
+        ''' </summary>
+        ''' <param name="desc"></param>
+        Public Sub ChangeDesc(ByVal desc As Boolean)
+            m_BdVerifierConf.Desc = desc
+        End Sub
 
         ''' <summary>
         ''' 检测文件是否包含违规文件
@@ -59,6 +96,7 @@ Namespace ShanXingTech.Net2
             ' 根据用户设置
             ' 全部分享一次，有违规文件再展开检测
             Dim contain = Await ContainIllegalFileAsync(path)
+            If m_Cts.IsCancellationRequested Then Return
 
             If LegalOptions.Yes = contain.Legal Then
                 RaiseEvent CheckReport(Nothing, New CheckReportEventArgs(LegalOptions.No, "无违规文件，无需展开检测"))
@@ -105,12 +143,14 @@ Namespace ShanXingTech.Net2
                 Return
             End If
 
-            Dim illegalPath = sb.ToString.Replace("\"c, "/"c)
+            Dim illegalPath = sb.Replace("\"c, "/"c).ToString
             RaiseEvent CheckReport(Nothing, New CheckReportEventArgs(LegalOptions.No, $"‘{illegalPath}’ 包含违规文件，需要展开检测"))
 
             path = Await ExpandDirectoryAsync(illegalPath)
 
 Expand:
+            If m_Cts.IsCancellationRequested Then Return
+
             ' 展开检测
             Dim checkRst = Await ExpandCheckAsync(path)
 
@@ -161,6 +201,10 @@ Expand:
                 End If
             End If
 
+            If m_Cts.IsCancellationRequested Then
+                Return (LegalOptions.Unknow, pathConcat & "任务取消", -1)
+            End If
+
             Dim root As ShareResultEntity.Root
             Try
                 root = MSJsSerializer.Deserialize(Of ShareResultEntity.Root)(shareRst.Message)
@@ -196,19 +240,23 @@ Verify：
                 Return (LegalOptions.No, pathConcat & shareInfo.ErrorDescription, -1)
             End If
 
-            Return Await VerifyShareFileAsync(shareInfo.Link, pathConcat)
+            If m_Cts.IsCancellationRequested Then
+                Return (LegalOptions.Unknow, pathConcat & "任务取消", -1)
+            End If
+
+            Return Await VerifyShareFileAsync(shareInfo, pathConcat)
         End Function
 
         ''' <summary>
         ''' 检验分享文件的有效性。注：这里是查看自己分享的文件，不需要提取码
         ''' </summary>
-        ''' <param name="url">分享链接</param>
+        ''' <param name="shareInfo">分享信息</param>
         ''' <returns>文件合法返回True,文件（包含）违规返回False</returns>
-        Public Overloads Async Function VerifyShareFileAsync(ByVal url As String, ByVal pathConcat As String) As Task(Of (Legal As LegalOptions, Path As String, Fs_Id As Long))
+        Public Overloads Async Function VerifyShareFileAsync(ByVal shareInfo As ShareResultCacheInfo, ByVal pathConcat As String) As Task(Of (Legal As LegalOptions, Path As String, Fs_Id As Long))
             Try
-                Dim rst = Await TryDoGetAsync(url)
+                Dim rst = Await TryDoGetAsync(shareInfo.Link)
 
-                If Not rst.Success Then Return (LegalOptions.Unknow, url, -1)
+                If Not rst.Success Then Return (LegalOptions.Unknow, shareInfo.Link, -1)
 
                 ' 获取目录
                 Dim shareData = rst.Message.GetFirstMatchValue("locals.mset\((.*?)\)")
@@ -227,7 +275,9 @@ Verify：
 
                 ' 顶层目录为文件夹并且此时检测分享的链接正是文件夹
                 If root.errno <> 0 Then
-                    Return (LegalOptions.No, pathConcat & GetShareErrorNoDescription(root.errno), -1)
+                    shareInfo.ErrorNo = root.errno
+                    shareInfo.ErrorDescription = GetShareErrorNoDescription(root.errno)
+                    Return (LegalOptions.No, pathConcat & shareInfo.ErrorDescription, -1)
                 End If
 
                 For Each f In root.file_list
@@ -258,7 +308,9 @@ Verify：
                 If root.errno = 0 Then
                     Return (LegalOptions.Yes, String.Empty, -1)
                 Else
-                    Return (LegalOptions.No, pathConcat & GetShareErrorNoDescription(root.errno), -1)
+                    shareInfo.ErrorNo = root.errno
+                    shareInfo.ErrorDescription = GetShareErrorNoDescription(root.errno)
+                    Return (LegalOptions.No, pathConcat & shareInfo.ErrorDescription, -1)
                 End If
             Catch ex As TaskCanceledException
                 ' do nothing
@@ -330,6 +382,10 @@ Verify：
                 Return (LegalOptions.No, chkRst.Path)
             End If
 
+            If m_Cts.IsCancellationRequested Then
+                Return (LegalOptions.Unknow, chkRst.Path)
+            End If
+
             Dim directorys = path.FindAll(Function(f) f.IsDir)
             Return Await InternalBinaryCheckAsync(directorys)
         End Function
@@ -350,6 +406,10 @@ Verify：
 
                 If contain.Path.Contains("分享失败：分享次数超出限制") Then
                     Return (LegalOptions.No, pathSlice)
+                End If
+
+                If m_Cts.IsCancellationRequested Then
+                    Return (LegalOptions.Unknow, pathSlice)
                 End If
 
                 If LegalOptions.No = contain.Legal Then
@@ -395,13 +455,7 @@ Verify：
             "/" & fullPath.Replace("\"c, "/"c))
 
             ' 根据路径获取文件夹的 fs Id
-            Dim getRst = Await GetDirInfoAsync(dir)
-            If Not getRst.Success Then
-                RaiseEvent CheckReport(Nothing, New CheckReportEventArgs(LegalOptions.Unknow, "展开文件夹目录失败"))
-                Return New List(Of PathInfo)
-            End If
-
-            Dim root = MSJsSerializer.Deserialize(Of DirectoryEntity.Root)(getRst.Message)
+            Dim root = Await GetDirInfoAsync(dir)
             If root Is Nothing Then
                 Return New List(Of PathInfo)
             End If
@@ -413,8 +467,8 @@ Verify：
             Dim path As New List(Of PathInfo)
             For Each d In root.list
                 Dim item = New PathInfo(d.fs_id, d.isdir = 1, d.path) With {
-                .FullPath = d.path
-            }
+                    .FullPath = d.path
+                }
                 path.Add(item)
             Next
             Return path
@@ -452,10 +506,12 @@ Verify：
         End Function
 
         ''' <summary>
-        ''' 取消检测
+        ''' 取消任务
         ''' </summary>
         Public Sub Cancel()
             m_Cts.Cancel()
         End Sub
+
+#End Region
     End Class
 End Namespace

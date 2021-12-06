@@ -95,6 +95,7 @@
     <Compile Include="Entities\ShareResultEntity.vb" />
     <Compile Include="Enum\LegalOptions.vb" />
     <Compile Include="Enum\ShareExpirationDate.vb" />
+    <Compile Include="Enum\OrderMode.vb" />
     <Compile Include="EventArgs\BrowsingEventArgs.vb" />
     <Compile Include="EventArgs\CheckBaseEventArgs.vb" />
     <Compile Include="EventArgs\CheckReportEventArgs.vb" />

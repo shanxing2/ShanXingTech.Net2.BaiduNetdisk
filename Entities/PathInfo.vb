@@ -17,6 +17,8 @@
 
             Public Property Id As Long
             Public Property FullPath As String
+            Public Property Size As Long
+            Public Property ModifyTime As Long
             Public Property IsDir As Boolean
 
         End Class

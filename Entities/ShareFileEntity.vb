@@ -93,7 +93,7 @@
 				''' <summary>
 				''' 
 				''' </summary>
-				Public Property uk() As Integer
+				Public Property uk() As Long
 					Get
 						Return m_uk
 					End Get
@@ -101,7 +101,7 @@
 						m_uk = Value
 					End Set
 				End Property
-				Private m_uk As Integer
+				Private m_uk As Long
 				''' <summary>
 				''' 
 				''' </summary>

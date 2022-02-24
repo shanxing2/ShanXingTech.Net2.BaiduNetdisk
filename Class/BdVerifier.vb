@@ -326,7 +326,7 @@ Verify：
         ''' <param name="uk"></param>
         ''' <param name="shareId"></param>
         ''' <returns></returns>
-        Private Async Function BrowseDirectoryAsync(ByVal dir As String, ByVal uk As Integer, ByVal shareId As Long) As Task(Of (Success As Boolean, Message As String, Path As String))
+        Private Async Function BrowseDirectoryAsync(ByVal dir As String, ByVal uk As Long, ByVal shareId As Long) As Task(Of (Success As Boolean, Message As String, Path As String))
             RaiseEvent Browsing(Nothing, New BrowsingEventArgs(dir))
 
             Dim getRst = Await GetShareDirInfoAsync(dir, uk, shareId)
@@ -498,7 +498,7 @@ Verify：
         ''' </summary>
         ''' <param name="dir">目录路径。不需要编码,如 '/软件包' </param>
         ''' <returns></returns>
-        Public Async Function GetShareDirInfoAsync(ByVal dir As String, ByVal uk As Integer, ByVal shareId As Long) As Task(Of HttpResponse)
+        Public Async Function GetShareDirInfoAsync(ByVal dir As String, ByVal uk As Long, ByVal shareId As Long) As Task(Of HttpResponse)
             ' logid 可有可无
             Dim url = $"https://pan.baidu.com/share/list?uk={uk}&shareid={shareId}&order=other&desc=1&showempty=0&web=1&page=1&num=100&dir={dir.UrlEncode}&t=0.42717085533817023&channel=chunlei&web=1&app_id=250528&bdstoken=null&logid={GetBase64LogId()}&clienttype=0"
 

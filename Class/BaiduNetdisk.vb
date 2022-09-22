@@ -149,18 +149,18 @@ Namespace ShanXingTech.Net2
         ''' <summary>
         ''' 获取登录信息
         ''' </summary>
-        ''' <param name="loginedHtml"></param>
+        ''' <param name="loginedCookieKvp"></param>
         ''' <returns></returns>
-        Public Shared Function GetLoginInfo(ByVal loginedHtml As String) As (BdsToken As String, BdUSS As String)
-            'm_BdVerifierConf.BdsToken = "885bc0c371ec21241da3a5f63248724b"
-            'm_BdVerifierConf.BdUSS = "pansec_DCb740ccc5511e5e8fedcff06b081203-1BXEtz42RhOdPXw8thmfUr%2BEJBfcDkLhb3RioiBJqY6OgmLJTpbglX5A9Tm%2BiE45vqGoUucEwmXcM%2FUs%2FP1Us8p2eRJLx70Sw7S3eUdDG3ueCrERKsjiDGucUnarSUeEXpuUm29hTMjSkvEn9lSSrv9heoyH0zdxtY%2BYM6Dqm8qjFiBDEfjCVOiy8YN5uv6RfoE9VfhbDL98pCYx%2BJ5%2FQNPXTD2i7GqVsoTFVhKXBI8S%2B9%2F3phuA%2BCbWaZo%2Bcj2E1BpyPDKQN29i%2B3exBXLwzQ%3D%3D"
-
+        Public Shared Function GetLoginInfo(ByVal loginedCookieKvp As String) As (BdsToken As String, BdUSS As String)
             ' 访问网盘首页 以获取bdsToken 和 m_BdVerifierConf.BdUSS
             'Dim getHomeRst = Await Net2.GetAsync("https://pan.baidu.com/disk/home", defaultHttpGetRequestHeaders)
-            Dim pattern = """bdstoken"":""(\w+)"".*?""XDUSS"":""(.*?)"""
-            Dim match = Regex.Match(loginedHtml, pattern, RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+            Dim pattern = "STOKEN=(\w+)"
+            Dim match = Regex.Match(loginedCookieKvp, pattern, RegexOptions.IgnoreCase Or RegexOptions.Compiled)
             Dim bdsToken = match.Groups(1).Value
-            Dim bdUSS = match.Groups(2).Value
+
+            pattern = "BDUSS=(\w+)"
+            match = Regex.Match(loginedCookieKvp, pattern, RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+            Dim bdUSS = match.Groups(1).Value
 
             Return (bdsToken, bdUSS)
         End Function
@@ -615,7 +615,7 @@ DirLoop:
                 page += 1
                 getRst = Await GetDirInfoAsync(dir, page)
                 Dim tempRoot = MSJsSerializer.Deserialize(Of DirectoryEntity.Root)(getRst.Message)
-                If tempRoot.errno = 0 Then
+                If tempRoot.errno = 0 AndAlso root.list IsNot Nothing Then
                     root.list.AddRange(tempRoot.list)
                 Else
                     root.errno = tempRoot.errno
